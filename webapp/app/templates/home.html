@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Default Synthetic Data Generator</h1>
+    <form action="{{ url_for('main.preview') }}" method="post" id="data-form">
+        <div class="form-row">
+            <div class="form-group col-md-2">
+                <label for="field-type">Field type:</label>
+                <select name="field_type" id="field-type" class="form-control">
+                    {% set selected_first_field = field_data[0][0] if field_data and field_data|length > 0 else None %}
+                    {% for field in field_definitions.values() %}
+                    <option value="{{ field.field_id }}" {% if field.field_id == selected_first_field %}selected{% endif %}>{{ field.display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="custom-name">Field custom name:</label>
+                {% if field_data and field_data|length > 0 %}
+                    <input type="text" id="custom-name" name="custom_name" placeholder="Enter field custom name" class="form-control" value="{{ field_data[0][1] }}">
+                {% else %}
+                    <input type="text" id="custom-name" name="custom_name" placeholder="Enter field custom name" class="form-control">
+                {% endif %}
+            </div>
+            <div class="form-group col-md-2">
+                <label for="rows">No of rows:</label>
+                <input type="number" id="rows" name="rows" class="form-control" placeholder="Enter no of rows"  value="{{ rows }}">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="file-name">File name:</label>
+                <input type="text" id="file-name" name="file_name" class="form-control" placeholder="Enter file name"  value="{{ file_name }}">
+            </div>
+        </div>
+        <div class="form-row" id="secondRow">
+            <div class="col text-right">
+                <div class="buttons">
+                <button form="data-form" type="submit" class="btn btn-success">Preview</button>
+                <button type="button" class="btn btn-secondary">Download</button>
+                <button type="button" class="btn btn-primary">Cloud ↑</button>
+                <button type="button" class="btn btn-warning">Cloud ↓</button>
+                    </div>
+            </div>
+        </div>
+        <div id="fields">
+             {% for field in field_data[1:] %}
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <select name="field_type_{{ loop.index0 }}" id="field-type-{{ loop.index0 }}" class="form-control">
+                    {% for field_def in field_definitions.values() %}
+                        <option value="{{ field_def.field_id }}" {% if field[0] == field_def.field_id %}selected{% endif %}>{{ field_def.display }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <input type="text" id="custom-name-{{ loop.index0 }}" name="custom_name_{{ loop.index0 }}" value="{{ field[1] }}" class="form-control" placeholder="Enter field custom name">
+                </div>
+                <div class="form-group col-md-1"><button type="button" class="btn btn-danger delete-field-button">X</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="form-row">
+            <button type="button" class="btn btn-info add-field-button">+</button>
+        </div>
+    </form>
+</div>
+
+<div class="container mt-4">
+    {% block preview_content %}
+    {% endblock %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

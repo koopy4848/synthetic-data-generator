@@ -1,0 +1,19 @@
+{% extends 'home.html' %}
+
+{% block preview_content %}
+<table>
+    <tr>
+        {% for field in field_data %}
+        <th>{{ field[1] if field[1] else field_definitions[field[0]].display }}</th>
+        {% endfor %}
+    </tr>
+    {% for row in fake_data %}
+    <tr>
+        {% for field in row %}
+            <td>{{ field }}</td>
+        {% endfor %}
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
