@@ -98,24 +98,37 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     document.getElementById('previewData-btn').addEventListener('click', function(event) {
-        form.action = routeToPreviewData;
         if (!validateForm("preview")){
             event.preventDefault();
         }
+        form.action = routeToPreviewData;
     });
 
     document.getElementById('downloadData-btn').addEventListener('click', function(event) {
-        form.action = routeToDownloadData;
         if (!validateForm("downloadData")){
             event.preventDefault();
         }
+        form.action = routeToDownloadData;
     });
 
     document.getElementById('downloadSchema-btn').addEventListener('click', function(event) {
-        form.action = routeToDownloadSchema;
         if (!validateForm("downloadSchema")){
             event.preventDefault();
         }
+        form.action = routeToDownloadSchema;
+    });
+
+    document.getElementById('uploadSchema-btn').addEventListener('click', function(event) {
+        event.preventDefault();
+
+        if (!validateForm("uploadSchema")){
+            return; // stop if validation fails
+        }
+        form.action = routeToUploadSchema;
+        form.enctype = 'multipart/form-data'; // Required for file upload
+
+        // Submit the form
+        form.submit();
     });
 
     document.getElementById('startSdg-btn').addEventListener('click', function(event) {

@@ -1,3 +1,5 @@
+import json
+
 from flask import render_template, request
 from . import default_blueprint
 from webapp.app.models.fields_definitions import field_definitions
@@ -38,7 +40,7 @@ def preview_data():
     faker_methods = [field_definitions[field[0]].faker_method for field in field_data]
     fake_data = [fake_row(faker_methods) for _ in range(0, 10)]
     return render_template('preview.html', fake_data=fake_data, file_name=file_name, rows=rows, field_data=field_data,
-                           field_definitions=field_definitions)
+                           field_definitions=field_definitions, file_format=file_format)
 
 
 @default_blueprint.route('/documentation')
@@ -56,10 +58,9 @@ def download_file():
 
 @default_blueprint.route('/download-schema', methods=['POST'])
 def download_schema():
-    (file_name, file_format, rows, field_data) = extract_data(request.json)
+    (file_name, file_format, rows, field_data) = extract_data(request.form)
 
     result = create_schema_file(file_name, file_format, rows, field_data)
-
     return respond_with_file(result["filename"], result["local_file_path"])
 
 
@@ -73,4 +74,23 @@ def start_sdg():
 
 @default_blueprint.route('/upload-schema', methods=['POST'])
 def upload_schema():
-    return
+    # Check if the post request has the file part
+    if 'schema' not in request.files:
+        return 'No file part', 400
+    file = request.files['schema']
+
+    # If the user does not select a file, the browser submits an
+    # empty file without a filename.
+    if file.filename == '':
+        return 'No selected file', 400
+
+    if file:  # If a file is present
+        # Read the file contents
+        file_contents = file.read()
+        data = json.loads(file_contents)
+
+        # Process the file contents here (e.g., parse JSON)
+        return render_template('default_sdg.html', field_definitions=field_definitions, field_data=data["field_data"],
+                               rows=data["rows"], file_name=data["file_name"], file_format=data["file_format"])
+
+    return 'Unexpected error', 500

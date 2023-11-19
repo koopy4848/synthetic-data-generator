@@ -159,7 +159,7 @@ def create_schema_file(file_name, file_format, rows, field_data):
     local_file_path = create_file(schema_file_name)
 
     # Write json data to schema file
-    with open(schema_file_name, 'w') as schema_file:
+    with open(local_file_path, 'w') as schema_file:
         schema_file.write(json_data)
 
     # Return the schema file name for reference if needed
