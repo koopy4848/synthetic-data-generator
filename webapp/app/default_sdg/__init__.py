@@ -4,4 +4,4 @@ from flask import Blueprint
 default_blueprint = Blueprint('default_sdg', __name__)
 
 
-from . import default_sdg_views  # This import is necessary to ensure the routes get registered
+from . import default_sdg_views  # noqa: E402

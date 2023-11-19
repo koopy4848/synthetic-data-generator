@@ -7,9 +7,7 @@ env = os.environ.get('ENVIRONMENT', 'development')
 
 # Load the corresponding .env file
 if env == 'development':
-    dotenv_path = '.env'
-
-load_dotenv(dotenv_path)
+    load_dotenv()
 
 
 app = create_app()

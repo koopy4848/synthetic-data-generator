@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         // Create DIVs for layout and append the select and input elements
         let selectDiv = document.createElement('div');
-        selectDiv.classList.add('form-group', 'col-md-2');
+        selectDiv.classList.add('form-group', 'col-md-4');
         selectDiv.appendChild(newSelect);
 
         let inputDiv = document.createElement('div');
@@ -68,22 +68,24 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     });
 
-    form.addEventListener('submit', function(event) {
+    function validateForm(formAction){
         let isValid = true;
         const rows = document.getElementById('rows');
         const fileName = document.getElementById('file-name');
         const fieldType = document.getElementById('field-type');
 
-        // Validate number of rows (must be a number and greater than 0)
-        if (!rows.value || isNaN(rows.value) || parseInt(rows.value) <= 0) {
-            alert('Please enter a valid number of rows.');
-            isValid = false;
-        }
+        if (formAction != "preview"){
+            // Validate number of rows (must be a number and greater than 0)
+            if (!rows.value || isNaN(rows.value) || parseInt(rows.value) <= 0) {
+                alert('Please enter a valid number of rows.');
+                isValid = false;
+            }
 
-        // Validate file name (must not be empty)
-        if (!fileName.value.trim()) {
-            alert('Please enter a file name.');
-            isValid = false;
+            // Validate file name (must not be empty)
+            if (!fileName.value.trim()) {
+                alert('Please enter a file name.');
+                isValid = false;
+            }
         }
 
         // Validate field type (must be selected)
@@ -92,19 +94,34 @@ document.addEventListener('DOMContentLoaded', (event) => {
             isValid = false;
         }
 
-        // If validation fails, prevent form submission
-        if (!isValid) {
+        return isValid;
+    }
+
+    document.getElementById('previewData-btn').addEventListener('click', function(event) {
+        form.action = routeToPreviewData;
+        if (!validateForm("preview")){
             event.preventDefault();
         }
     });
 
-    document.getElementById('download-btn').addEventListener('click', function() {
-        form.action = '/download';
+    document.getElementById('downloadData-btn').addEventListener('click', function(event) {
+        form.action = routeToDownloadData;
+        if (!validateForm("downloadData")){
+            event.preventDefault();
+        }
     });
-    document.getElementById('preview-btn').addEventListener('click', function() {
-        form.action = '/preview';
+
+    document.getElementById('downloadSchema-btn').addEventListener('click', function(event) {
+        form.action = routeToDownloadSchema;
+        if (!validateForm("downloadSchema")){
+            event.preventDefault();
+        }
     });
-    document.getElementById('cloudUpload-btn').addEventListener('click', function() {
+
+    document.getElementById('startSdg-btn').addEventListener('click', function(event) {
+        if (!validateForm("startSdg")){
+            return;
+        }
         const formData = new FormData(form);
         const requestData = {};
 
@@ -139,9 +156,4 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         event.preventDefault();
     });
-    document.getElementById('cloudDownload-btn').addEventListener('click', function() {
-        form.action = '/cloudDownload';
-    });
-
-
 });

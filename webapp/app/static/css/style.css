@@ -1,10 +1,3 @@
-.buttons {
-  position: absolute;
-  top: 0px; /* Adjust the value as needed */
-  right: 0px; /* Adjust the value as needed */
-  /* Other styles like width, height, etc. */
-}
-
 #uploadStatus {
     padding: 10px;
     margin-top: 10px;
@@ -20,4 +13,13 @@
 #uploadStatus.error {
     color: red;
     display: block;
+}
+
+.card {
+    border-radius: 10px; /* Rounded corners */
+}
+
+.card-header {
+    font-size: 1.5em; /* Larger title font */
+    padding: 0px;
 }

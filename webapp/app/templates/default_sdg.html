@@ -2,65 +2,160 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Default Synthetic Data Generator</h1>
+    <h1 class="mb-4">Synthetic Data Generator</h1>
     <form action="{{ url_for('default_sdg.preview_data') }}" method="post" id="data-form">
-        <div class="form-row">
-            <div class="form-group col-md-2">
-                <label for="field-type">Field type:</label>
-                <select name="field_type" id="field-type" class="form-control">
-                    {% set selected_first_field = field_data[0][0] if field_data and field_data|length > 0 else None %}
-                    {% for field in field_definitions.values() %}
-                    <option value="{{ field.field_id }}" {% if field.field_id == selected_first_field %}selected{% endif %}>{{ field.display }}</option>
-                    {% endfor %}
-                </select>
+        <div class="card">
+            <div class="card-header" id="headingDefineSchema">
+                <h2 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse"
+                            data-target="#collapseDefineSchema" aria-expanded="true"
+                            aria-controls="collapseOne">
+                        Define Schema
+                    </button>
+                </h2>
             </div>
-            <div class="form-group col-md-4">
-                <label for="custom-name">Field custom name:</label>
-                {% if field_data and field_data|length > 0 %}
-                    <input type="text" id="custom-name" name="custom_name" placeholder="Enter field custom name" class="form-control" value="{{ field_data[0][1] }}">
-                {% else %}
-                    <input type="text" id="custom-name" name="custom_name" placeholder="Enter field custom name" class="form-control">
-                {% endif %}
-            </div>
-            <div class="form-group col-md-2">
-                <label for="rows">No of rows:</label>
-                <input type="number" id="rows" name="rows" class="form-control" placeholder="Enter no of rows"  value="{{ rows }}">
-            </div>
-            <div class="form-group col-md-4">
-                <label for="file-name">File name:</label>
-                <input type="text" id="file-name" name="file_name" class="form-control" placeholder="Enter file name"  value="{{ file_name }}">
-            </div>
-        </div>
-        <div class="form-row" id="secondRow">
-            <div class="col text-right">
-                <div class="buttons">
-                    <button form="data-form" type="submit" class="btn btn-success" id="preview-btn">Preview</button>
-                    <button form="data-form" type="submit" class="btn btn-secondary" id="download-btn">Download</button>
-                    <button form="data-form" type="button" class="btn btn-primary" id="cloudUpload-btn">Cloud ↑</button>
-                    <button form="data-form" type="submit" class="btn btn-warning" id="cloudDownload-btn">Cloud ↓</button>
+
+            <div id="collapseDefineSchema" class="collapse show" aria-labelledby="headingDefineSchema"
+                 data-parent="#data-form">
+                <div class="card-body">
+                    <button form="data-form" type="submit" class="btn btn-success" id="previewData-btn">䷀🔍
+                        Preview
+                    </button>
+                    <button form="data-form" type="submit" class="btn btn-secondary" id="downloadData-btn">䷀↓
+                        Generate &
+                        Download Data
+                    </button>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-2">
+                            <label for="rows">No of rows:</label>
+                            <input type="number" id="rows" name="rows" class="form-control"
+                                   placeholder="Enter no of rows"
+                                   value="{{ rows if rows else 10 }}">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="file-name">File name:</label>
+                            <input type="text" id="file-name" name="file_name" class="form-control"
+                                   placeholder="Enter file name"
+                                   value="{{ file_name if file_name else 'synthetic_generated_data.csv' }}">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="file_format">Format:</label>
+                            <select name="file_format" id="file_format" class="form-control">
+                                <option value="csv" {% if file_format=='csv' %}selected{% endif %}>csv</option>
+                                <option value="json" {% if file_format=='json' %}selected{% endif %}>json</option>
+                                <option value="ndjson" {% if file_format=='ndjson' %}selected{% endif %}>ndjson</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="field-type">Field type:</label>
+                            <select name="field_type" id="field-type" class="form-control">
+                                {% set selected_first_field = field_data[0][0] if field_data and
+                                field_data|length > 0 else None
+                                %}
+                                {% for field in field_definitions.values() %}
+                                <option value="{{ field.field_id }}"
+                                        {% if field.field_id== selected_first_field %}selected{%
+                                        endif %}>{{ field.display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="custom-name">Field custom name:</label>
+                            <input type="text" id="custom-name" name="custom_name"
+                                   placeholder="Enter field custom name"
+                                   class="form-control" {% if field_data and field_data|length> 0 %}value="{{
+                            field_data[0][1]
+                            }}" {% endif %}>
+                        </div>
+                    </div>
+                    <div id="fields">
+                        {% for field in field_data[1:] %}
+                        <div class="form-row">
+                            <div class="form-group col-md-2">
+                                <select name="field_type_{{ loop.index0 }}" id="field-type-{{ loop.index0 }}"
+                                        class="form-control">
+                                    {% for field_def in field_definitions.values() %}
+                                    <option value="{{ field_def.field_id }}" {% if field[0]== field_def.field_id
+                                            %}selected{%
+                                            endif %}>{{ field_def.display }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <input type="text" id="custom-name-{{ loop.index0 }}"
+                                       name="custom_name_{{ loop.index0 }}"
+                                       value="{{ field[1] }}" class="form-control"
+                                       placeholder="Enter field custom name">
+                            </div>
+                            <div class="form-group col-md-1">
+                                <button type="button" class="btn btn-danger delete-field-button">X</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-row">
+                        <button type="button" class="btn btn-info add-field-button">+</button>
+                    </div>
+
                 </div>
             </div>
         </div>
-        <div id="fields">
-             {% for field in field_data[1:] %}
-            <div class="form-row">
-                <div class="form-group col-md-2">
-                    <select name="field_type_{{ loop.index0 }}" id="field-type-{{ loop.index0 }}" class="form-control">
-                    {% for field_def in field_definitions.values() %}
-                        <option value="{{ field_def.field_id }}" {% if field[0] == field_def.field_id %}selected{% endif %}>{{ field_def.display }}</option>
-                    {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group col-md-4">
-                    <input type="text" id="custom-name-{{ loop.index0 }}" name="custom_name_{{ loop.index0 }}" value="{{ field[1] }}" class="form-control" placeholder="Enter field custom name">
-                </div>
-                <div class="form-group col-md-1"><button type="button" class="btn btn-danger delete-field-button">X</button>
+        <div class="card">
+            <div class="card-header" id="headingGenerate">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                            data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseOne">Schema
+                        File
+                    </button>
+                </h2>
+            </div>
+
+            <div id="collapseTwo" class="collapse" aria-labelledby="headingOne" data-parent="#data-form">
+                <div class="card-body">
+
+                    <div class="form-row">
+                        <div class="col">
+                            <button form="data-form" type="button" class="btn btn-primary"
+                                    id="downloadSchema-btn">↓ Download Schema
+                            </button>
+                        </div>
+                        <div class="col">
+                            <button form="data-form" type="button" class="btn btn-primary"
+                                    id="uploadSchema-btn">↑ Load Schema
+                            </button>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="schema">Schema file:</label>
+                            <input type="file" id="schema" name="schema" placeholder="Enter path to schema"
+                                   class="form-control">
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            {% endfor %}
         </div>
-        <div class="form-row">
-            <button type="button" class="btn btn-info add-field-button">+</button>
+        <div class="card">
+            <div class="card-header" id="headingOne">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed " type="button" data-toggle="collapse"
+                            data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        Start Synthetic Data Generator job in Cloud
+                    </button>
+                </h2>
+            </div>
+
+            <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#data-form">
+                <div class="card-body">
+                    <button form="data-form" type="submit" class="btn btn-warning" id="startSdg-btn">☁䷀
+                        Start SDG Job in Cloud based on schema
+                    </button>
+                </div>
+            </div>
         </div>
     </form>
 </div>
@@ -75,5 +170,18 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script type="text/javascript">
+    const routeToPreviewData = '{{ url_for('default_sdg.preview_data') }}';
+    const routeToDownloadData = '{{ url_for('default_sdg.download_file') }}';
+    const routeToDownloadSchema = '{{ url_for('default_sdg.download_schema') }}';
+    const routeToUploadSchema = '{{ url_for('default_sdg.upload_schema') }}';
+    const routeToStartSdgJob = '{{ url_for('default_sdg.start_sdg') }}';
+
+
+
+
+
+
+</script>
+<script src="{{ url_for('static', filename='js/default_sdg.js') }}"></script>
 {% endblock %}

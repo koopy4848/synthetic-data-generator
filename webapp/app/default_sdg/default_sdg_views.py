@@ -1,16 +1,16 @@
-import os
-from flask import render_template, request, Response, send_file, jsonify, current_app
-from werkzeug.wsgi import FileWrapper
+from flask import render_template, request
 from . import default_blueprint
 from webapp.app.models.fields_definitions import field_definitions
-from webapp.app.utils import fake_row, create_sd_file, upload_schema_file_to_gcs, get_file_from_cloud
+from webapp.app.utils import fake_row, create_data_file, upload_schema_file_to_gcs, respond_with_file, \
+    create_schema_file
 
 
-def extract_data(data_form):
+def extract_data(data_form, enforce_rows_int=False):
     field_data = []
 
     rows = data_form.get('rows')
     file_name = data_form.get('file_name')
+    file_format = data_form.get('file_format')
 
     for key in data_form:
         if key.startswith('field_type_'):
@@ -23,7 +23,7 @@ def extract_data(data_form):
             custom_name = data_form.get(f'custom_name')
             field_data.append((field_type, custom_name))
 
-    return file_name, int(rows), field_data
+    return file_name, file_format, int(rows), field_data
 
 
 @default_blueprint.route('/')
@@ -34,9 +34,9 @@ def default_sdg():
 
 @default_blueprint.route('/preview', methods=['POST'])
 def preview_data():
-    (file_name, rows, field_data) = extract_data(request.form)
+    (file_name, file_format, rows, field_data) = extract_data(request.form)
     faker_methods = [field_definitions[field[0]].faker_method for field in field_data]
-    fake_data = [fake_row(faker_methods) for i in range(0, 10)]
+    fake_data = [fake_row(faker_methods) for _ in range(0, 10)]
     return render_template('preview.html', fake_data=fake_data, file_name=file_name, rows=rows, field_data=field_data,
                            field_definitions=field_definitions)
 
@@ -48,32 +48,29 @@ def documentation():
 
 @default_blueprint.route('/download-data', methods=['POST'])
 def download_file():
-    (file_name, rows, field_data) = extract_data(request.form)
-    local_file_path = create_sd_file(file_name, rows, field_data, field_definitions)
+    (file_name, file_format, rows, field_data) = extract_data(request.form)
+    local_file_path, new_file_name = create_data_file(file_name, file_format, rows, field_data, field_definitions)
 
-    file_handle = open(local_file_path, 'rb')
-    wrapper = FileWrapper(file_handle)\
-
-    response = Response(wrapper, mimetype='text/csv', direct_passthrough=True)
-    response.headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
-
-    # Register a function to be called when the response has finished being sent
-    def cleanup():
-        file_handle.close()  # Close the file
-        try:
-            os.remove(local_file_path)  # Delete the file
-        except Exception as error:
-            current_app.logger.error(f"Error removing file: {error}")
-
-    response.call_on_close(cleanup)
-
-    return response
+    return respond_with_file(new_file_name, local_file_path)
 
 
-@default_blueprint.route('/upload-data-to-cloud', methods=['POST'])
-def upload_data_to_cloud():
-    (file_name, rows, field_data) = extract_data(request.json)
-    file_name = upload_schema_file_to_gcs(file_name, rows, field_data)
+@default_blueprint.route('/download-schema', methods=['POST'])
+def download_schema():
+    (file_name, file_format, rows, field_data) = extract_data(request.json)
 
-    return jsonify({"status": "success", "message": "File uploaded successfully", "filename": file_name})
+    result = create_schema_file(file_name, file_format, rows, field_data)
 
+    return respond_with_file(result["filename"], result["local_file_path"])
+
+
+@default_blueprint.route('/start-sdg', methods=['POST'])
+def start_sdg():
+    (file_name, file_format, rows, field_data) = extract_data(request.json)
+    result = upload_schema_file_to_gcs(file_name, file_format, rows, field_data)
+
+    return result
+
+
+@default_blueprint.route('/upload-schema', methods=['POST'])
+def upload_schema():
+    return
