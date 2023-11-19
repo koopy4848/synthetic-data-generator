@@ -7,7 +7,6 @@ from google.cloud import storage
 from ..config import config
 from werkzeug.wsgi import FileWrapper
 from decimal import Decimal
-from decimal import Decimal
 from datetime import date
 
 
