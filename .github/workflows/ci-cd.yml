@@ -53,4 +53,4 @@ jobs:
           --allow-unauthenticated \
           --project ${{ secrets.GCP_PROJECT_ID }} \
           --set-env-vars BUCKET_NAME=${{ secrets.BUCKET_NAME }}
-          --service-account {{ secrets.SERVICE_ACCOUNT }}
+          --service-account ${{ secrets.SERVICE_ACCOUNT }}
