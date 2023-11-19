@@ -57,10 +57,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
         e.preventDefault(); // Prevent form submission
         addFieldRow(); // Add a new row of fields
     });
-});
 
-document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('data-form');
+
+    form.addEventListener('click', function(event) {
+        // Check if the clicked element has the class 'delete-field-button'
+        if (event.target.classList.contains('delete-field-button')) {
+            // Remove the closest .form-row element
+            event.target.closest('.form-row').remove();
+        }
+    });
 
     form.addEventListener('submit', function(event) {
         let isValid = true;
@@ -91,15 +97,51 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
         }
     });
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Assuming the form or a container div has the id 'form-container'
-    document.getElementById('data-form').addEventListener('click', function(event) {
-        // Check if the clicked element has the class 'delete-field-button'
-        if (event.target.classList.contains('delete-field-button')) {
-            // Remove the closest .form-row element
-            event.target.closest('.form-row').remove();
-        }
+    document.getElementById('download-btn').addEventListener('click', function() {
+        form.action = '/download';
     });
+    document.getElementById('preview-btn').addEventListener('click', function() {
+        form.action = '/preview';
+    });
+    document.getElementById('cloudUpload-btn').addEventListener('click', function() {
+        const formData = new FormData(form);
+        const requestData = {};
+
+        for (const [key, value] of formData.entries()) {
+            requestData[key] = value;
+        }
+
+        fetch('/upload-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update the webpage with the success message
+            const uploadStatusDiv = document.getElementById('uploadStatus');
+            uploadStatusDiv.innerHTML = `Upload to Google Cloud successful under filename "${data.filename}"`;
+            // On success
+            uploadStatusDiv.className = 'success';
+            uploadStatusDiv.style.display = 'block';
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            const uploadStatusDiv = document.getElementById('uploadStatus');
+            uploadStatusDiv.innerHTML = `Error during upload: ${error}`;
+            // On error
+            uploadStatusDiv.className = 'error';
+            uploadStatusDiv.style.display = 'block';
+        });
+
+        event.preventDefault();
+    });
+    document.getElementById('cloudDownload-btn').addEventListener('click', function() {
+        form.action = '/cloudDownload';
+    });
+
+
 });

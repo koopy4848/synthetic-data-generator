@@ -4,3 +4,20 @@
   right: 0px; /* Adjust the value as needed */
   /* Other styles like width, height, etc. */
 }
+
+#uploadStatus {
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    display: none;
+}
+
+#uploadStatus.success {
+    color: green;
+    display: block;
+}
+
+#uploadStatus.error {
+    color: red;
+    display: block;
+}

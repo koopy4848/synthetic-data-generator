@@ -37,6 +37,20 @@ jobs:
       with:
         credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+    - name: Setup GCP Credentials
+      env:
+        SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+      run: |
+        echo "$SERVICE_ACCOUNT_KEY" | base64 --decode > "$HOME"/gcloud-service-key.json
+        echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-service-key.json" >> $GITHUB_ENV
+
     - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy sdg --image europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/sdg/sdg:latest --region europe-central2 --platform managed --allow-unauthenticated --project ${{ secrets.GCP_PROJECT_ID }}
+        gcloud run deploy sdg \
+          --image europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/sdg/sdg:latest \
+          --region europe-central2 \
+          --platform managed \
+          --allow-unauthenticated \
+          --project ${{ secrets.GCP_PROJECT_ID }} \
+          --set-env-vars BUCKET_NAME=${{ secrets.BUCKET_NAME }}
+          --service-account {{ secrets.SERVICE_ACCOUNT }}

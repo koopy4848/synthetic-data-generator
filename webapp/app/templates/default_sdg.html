@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">Default Synthetic Data Generator</h1>
-    <form action="{{ url_for('main.preview') }}" method="post" id="data-form">
+    <form action="{{ url_for('default_sdg.preview_data') }}" method="post" id="data-form">
         <div class="form-row">
             <div class="form-group col-md-2">
                 <label for="field-type">Field type:</label>
@@ -34,11 +34,11 @@
         <div class="form-row" id="secondRow">
             <div class="col text-right">
                 <div class="buttons">
-                <button form="data-form" type="submit" class="btn btn-success">Preview</button>
-                <button type="button" class="btn btn-secondary">Download</button>
-                <button type="button" class="btn btn-primary">Cloud ↑</button>
-                <button type="button" class="btn btn-warning">Cloud ↓</button>
-                    </div>
+                    <button form="data-form" type="submit" class="btn btn-success" id="preview-btn">Preview</button>
+                    <button form="data-form" type="submit" class="btn btn-secondary" id="download-btn">Download</button>
+                    <button form="data-form" type="button" class="btn btn-primary" id="cloudUpload-btn">Cloud ↑</button>
+                    <button form="data-form" type="submit" class="btn btn-warning" id="cloudDownload-btn">Cloud ↓</button>
+                </div>
             </div>
         </div>
         <div id="fields">
@@ -64,6 +64,8 @@
         </div>
     </form>
 </div>
+<!-- Somewhere in your HTML -->
+<div id="uploadStatus"></div>
 
 <div class="container mt-4">
     {% block preview_content %}
