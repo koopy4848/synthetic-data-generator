@@ -3,6 +3,9 @@
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">Synthetic Data Generator</h1>
+    <div id="message" {% if message %}class="alert alert-danger"{%endif%}>
+        {{ message }}
+    </div>
     <form action="{{ url_for('default_sdg.preview_data') }}" method="post" id="data-form">
         <div class="card">
             <div class="card-header" id="headingDefineSchema">
@@ -105,16 +108,16 @@
             </div>
         </div>
         <div class="card">
-            <div class="card-header" id="headingGenerate">
+            <div class="card-header" id="headingSchemaFile">
                 <h2 class="mb-0">
                     <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
-                            data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseOne">Schema
+                            data-target="#collapseSchemaFile" aria-expanded="false" aria-controls="collapseSchemaFile">Schema
                         File
                     </button>
                 </h2>
             </div>
 
-            <div id="collapseTwo" class="collapse" aria-labelledby="headingOne" data-parent="#data-form">
+            <div id="collapseSchemaFile" class="collapse" aria-labelledby="headingSchemaFile" data-parent="#data-form">
                 <div class="card-body">
 
                     <div class="form-row">
@@ -139,16 +142,16 @@
             </div>
         </div>
         <div class="card">
-            <div class="card-header" id="headingOne">
+            <div class="card-header" id="headingCloud">
                 <h2 class="mb-0">
                     <button class="btn btn-link collapsed " type="button" data-toggle="collapse"
-                            data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            data-target="#collapseCloud" aria-expanded="false" aria-controls="collapseCloud">
                         Start Synthetic Data Generator job in Cloud
                     </button>
                 </h2>
             </div>
 
-            <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#data-form">
+            <div id="collapseCloud" class="collapse" aria-labelledby="headingCloud" data-parent="#data-form">
                 <div class="card-body">
                     <button form="data-form" type="submit" class="btn btn-warning" id="startSdg-btn">☁䷀
                         Start SDG Job in Cloud based on schema
@@ -158,8 +161,6 @@
         </div>
     </form>
 </div>
-<!-- Somewhere in your HTML -->
-<div id="uploadStatus"></div>
 
 <div class="container mt-4">
     {% block preview_content %}

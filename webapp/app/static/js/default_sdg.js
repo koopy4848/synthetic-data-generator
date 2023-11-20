@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         .then(response => response.json())
         .then(data => {
             // Update the webpage with the success message
-            const uploadStatusDiv = document.getElementById('uploadStatus');
+            const uploadStatusDiv = document.getElementById('message');
             uploadStatusDiv.innerHTML = `Upload to Google Cloud successful under filename "${data.filename}"`;
             // On success
             uploadStatusDiv.className = 'success';

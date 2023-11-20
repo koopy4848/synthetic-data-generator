@@ -74,23 +74,37 @@ def start_sdg():
 
 @default_blueprint.route('/upload-schema', methods=['POST'])
 def upload_schema():
+    # Default values
+    message = ''
+    field_data = []
+    rows = 0
+    file_name = ''
+    file_format = ''
+
     # Check if the post request has the file part
     if 'schema' not in request.files:
-        return 'No file part', 400
-    file = request.files['schema']
+        message = 'No file part'
+    else:
+        file = request.files['schema']
 
-    # If the user does not select a file, the browser submits an
-    # empty file without a filename.
-    if file.filename == '':
-        return 'No selected file', 400
+        # If a file is present
+        if file and file.filename:
+            try:
+                # Read the file contents
+                file_contents = file.read()
+                data = json.loads(file_contents)
 
-    if file:  # If a file is present
-        # Read the file contents
-        file_contents = file.read()
-        data = json.loads(file_contents)
+                field_data = data.get("field_data", [])
+                rows = data.get("rows", 0)
+                file_name = data.get("file_name", "")
+                file_format = data.get("file_format", "")
+            except json.JSONDecodeError as e:
+                message = f"Invalid JSON file: {e}"
+            except Exception as e:
+                message = f"Error processing file: {e}"
+        else:
+            message = 'No selected file' if file.filename == '' else "Unexpected error when reading the file"
 
-        # Process the file contents here (e.g., parse JSON)
-        return render_template('default_sdg.html', field_definitions=field_definitions, field_data=data["field_data"],
-                               rows=data["rows"], file_name=data["file_name"], file_format=data["file_format"])
-
-    return 'Unexpected error', 500
+    # Render template with the processed data or error message
+    return render_template('default_sdg.html', field_definitions=field_definitions, field_data=field_data,
+                           rows=rows, file_name=file_name, file_format=file_format, message=message)
