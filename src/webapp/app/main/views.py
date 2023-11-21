@@ -1,4 +1,3 @@
-import json
 from flask import render_template, request
 from . import main
 from src.webapp.app.models.PostData import PostData
