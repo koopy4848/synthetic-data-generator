@@ -33,20 +33,20 @@ class PostData:
 
     @staticmethod
     def extract_post_data(data_form):
-        field_data = data_form.__extract_field_data(data_form)
+        field_data = PostData.__extract_field_data(data_form)
 
         post_data = PostData(
-            rows=data_form.get('rows'),
+            rows=int(data_form.get('rows')),
             file_name=data_form.get('file_name'),
             file_format=data_form.get('file_format'),
             field_data=field_data,
-            rows_per_worker=data_form.get("rows_per_worker"),
-            workers=data_form.get("workers"),
+            rows_per_worker=int(data_form.get("rows_per_worker")),
+            workers=int(data_form.get("workers")),
             bq_table=data_form.get("bq_table"),
-            rows_per_part=data_form.get("rows_per_part"),
+            rows_per_part=int(data_form.get("rows_per_part")),
             gcs_file_suffix=data_form.get("gcs_file_suffix"),
             gcs_file_format=data_form.get("gcs_file_format"),
-            parts=data_form.get("parts")
+            parts=int(data_form.get("parts"))
         )
 
         return post_data

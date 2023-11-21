@@ -3,7 +3,7 @@
 {% block preview_content %}
 <table>
     <tr>
-        {% for field in field_data %}
+        {% for field in post_data.field_data %}
         <th>{{ field[1] if field[1] else field_definitions[field[0]].display }}</th>
         {% endfor %}
     </tr>

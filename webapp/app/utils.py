@@ -179,15 +179,13 @@ def create_schema_file(file_name, file_format, rows, field_data):
 def start_sdg_in_gcs(field_data, rows_per_part, parts, gcs_file_suffix, gcs_file_format):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, config.GCS_TOPIC_ID)
-
-    # if file_name has extension in it
-    # ignore it
+    messages = []
 
     for i in range(0, parts):
         file_name = f"{gcs_file_suffix}_{i:000}.{gcs_file_format}"
 
-        data = json.dumps({"file_name": file_name, "file_format": gcs_file_format, "rows": rows_per_part, "field_data": field_data},
-                          indent=4)
+        data = json.dumps({"file_name": file_name, "file_format": gcs_file_format, "rows": rows_per_part,
+                           "field_data": field_data}, indent=4)
 
         try:
             # Data must be a bytestring
@@ -195,14 +193,17 @@ def start_sdg_in_gcs(field_data, rows_per_part, parts, gcs_file_suffix, gcs_file
 
             # Publishes a message
             future = publisher.publish(topic_path, data)
-            return f'Message published. Message ID: {future.result()}'
+            messages.append(future.result())
         except Exception as e:
-            return f'An error occurred: {e}'
+            return {"status": "error", "message": f'An error occurred: {e}'}
+
+    return {"status": "success", "message": f'Message published. Message ID: {".".join(messages)}'}
 
 
 def start_sdg_in_bq(field_data, rows_per_worker, workers, bq_table):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(config.PROJECT_ID, config.BQ_TOPIC_ID)
+    messages = []
 
     for i in range(0, workers):
         data = json.dumps({"bq_table": bq_table, "rows": rows_per_worker, "field_data": field_data},
@@ -214,9 +215,11 @@ def start_sdg_in_bq(field_data, rows_per_worker, workers, bq_table):
 
             # Publishes a message
             future = publisher.publish(topic_path, data)
-            return f'Message published. Message ID: {future.result()}'
+            messages.append(future.result())
         except Exception as e:
-            return f'An error occurred: {e}'
+            return {"status": "error", "message": f'An error occurred: {e}'}
+
+    return {"status": "success", "message": f'Message published. Message ID: {".".join(messages)}'}
 
 
 def save_schema_to_gcs(schema_file_name, schema_data):
@@ -233,4 +236,3 @@ def save_schema_to_gcs(schema_file_name, schema_data):
 
     # Upload the schema file
     blob.upload_from_string(schema_data, content_type='application/json')
-

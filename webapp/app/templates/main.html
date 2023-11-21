@@ -77,7 +77,7 @@
                     <div id="fields">
                         {% for field in post_data.field_data[1:] %}
                         <div class="form-row">
-                            <div class="form-group col-md-2">
+                            <div class="form-group col-md-4">
                                 <select name="field_type_{{ loop.index0 }}" id="field-type-{{ loop.index0 }}"
                                         class="form-control">
                                     {% for field_def in field_definitions.values() %}

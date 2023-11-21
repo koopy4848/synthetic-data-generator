@@ -16,10 +16,10 @@ def home():
 
 @main.route('/preview', methods=['POST'])
 def preview_data():
-    post_data = PostData.extract_data(request.form)
+    post_data = PostData.extract_post_data(request.form)
     faker_methods = [field_definitions[field[0]].faker_method for field in post_data.field_data]
     fake_data = [fake_row(faker_methods) for _ in range(0, 10)]
-    return render_template('preview.html', fake_data=fake_data, data=post_data)
+    return render_template('preview.html', field_definitions=field_definitions, fake_data=fake_data, post_data=post_data)
 
 
 @main.route('/documentation')
@@ -29,7 +29,7 @@ def documentation():
 
 @main.route('/download-data', methods=['POST'])
 def download_file():
-    post_data = PostData.extract_data(request.form)
+    post_data = PostData.extract_post_data(request.form)
     local_file_path, new_file_name = create_data_file(post_data.file_name, post_data.file_format, post_data.rows,
                                                       post_data.field_data, field_definitions)
 
@@ -47,12 +47,9 @@ def download_schema():
 
 @main.route('/upload-schema', methods=['POST'])
 def upload_schema():
-    # Default values
+
+    post_data = PostData.extract_post_data(request.form)
     message = ''
-    field_data = []
-    rows = 0
-    file_name = ''
-    file_format = ''
 
     # Check if the post request has the file part
     if 'schema' not in request.files:
@@ -67,10 +64,10 @@ def upload_schema():
                 file_contents = file.read()
                 data = json.loads(file_contents)
 
-                field_data = data.get("field_data", [])
-                rows = data.get("rows", 0)
-                file_name = data.get("file_name", "")
-                file_format = data.get("file_format", "")
+                post_data.field_data = data.get("field_data", [])
+                post_data.rows = data.get("rows", 0)
+                post_data.file_name = data.get("file_name", "")
+                post_data.file_format = data.get("file_format", "")
             except json.JSONDecodeError as e:
                 message = f"Invalid JSON file: {e}"
             except Exception as e:
@@ -79,8 +76,7 @@ def upload_schema():
             message = 'No selected file' if file.filename == '' else "Unexpected error when reading the file"
 
     # Render template with the processed data or error message
-    return render_template('main.html', field_definitions=field_definitions, field_data=field_data,
-                           rows=rows, file_name=file_name, file_format=file_format, message=message)
+    return render_template('main.html', field_definitions=field_definitions, post_data=post_data, message=message)
 
 
 @main.route('/start-sdg-gcs', methods=['POST'])

@@ -131,51 +131,60 @@ document.addEventListener('DOMContentLoaded', (event) => {
         form.submit();
     });
 
-    document.querySelectorAll('#startBqSdg-btn', '#startGcsSdg-btn').addEventListener('click', function(event) {
-        if (this.id == 'startBqSdg-btn'){
-            if (!validateForm("startBqSdg")){
+    document.querySelectorAll('#startBqSdg-btn, #startGcsSdg-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            let formId;
+            let route;
+            if (this.id == 'startBqSdg-btn'){
+                formId = 'startBqSdg';
+                route = routeToStartSdgBqJob; // Ensure this variable is defined and has the correct route
+            } else if (this.id == 'startGcsSdg-btn'){
+                formId = 'startGcsSdg';
+                route = routeToStartSdgGcsJob; // Define and set this route appropriately
+            }
+
+            if (!validateForm(formId)){
                 return;
             }
-        }
 
-        if (this.id == 'startGcsSdg-btn'){
-            if (!validateForm("startGcsSdg")){
-                return;
+            const formData = new FormData(form);
+            const requestData = {};
+
+            for (const [key, value] of formData.entries()) {
+                requestData[key] = value;
             }
-        }
 
-        const formData = new FormData(form);
-        const requestData = {};
+            fetch(route, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update the webpage with the success message
+                const uploadStatusDiv = document.getElementById('message');
+                uploadStatusDiv.innerHTML = data.message;
 
-        for (const [key, value] of formData.entries()) {
-            requestData[key] = value;
-        }
+                if (data.status == "success"){
+                    uploadStatusDiv.className = 'alert alert-success';
+                }
+                else {
+                    uploadStatusDiv.className = 'alert alert-danger';
+                }
 
-        fetch(routeToStartSdgBqJob, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Update the webpage with the success message
-            const uploadStatusDiv = document.getElementById('message');
-            uploadStatusDiv.innerHTML = `Posted to Google Pub Sub messages with ids "${data}"`;
-            // On success
-            uploadStatusDiv.className = 'success';
-            uploadStatusDiv.style.display = 'block';
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            const uploadStatusDiv = document.getElementById('uploadStatus');
-            uploadStatusDiv.innerHTML = `Error during upload: ${error}`;
-            // On error
-            uploadStatusDiv.className = 'error';
-            uploadStatusDiv.style.display = 'block';
+                uploadStatusDiv.style.display = 'block';
+            })
+            .catch((error) => {
+                console.log('Error:', error);
+                const uploadStatusDiv = document.getElementById('uploadStatus');
+                uploadStatusDiv.innerHTML = `Error during upload: ${error}`;
+                uploadStatusDiv.className = 'alert alert-danger';
+                uploadStatusDiv.style.display = 'block';
+            });
+
+            event.preventDefault();
         });
-
-        event.preventDefault();
     });
 });
