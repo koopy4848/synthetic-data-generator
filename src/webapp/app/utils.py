@@ -1,26 +1,14 @@
 import csv
 import tempfile
-from faker import Faker
 from flask import current_app
-import json
 from google.cloud import storage
 from ..config import config
 from werkzeug.wsgi import FileWrapper
-from decimal import Decimal
-from datetime import date
 from google.cloud import pubsub_v1
-
 from flask import Response
 import os
-
-
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Decimal):
-            return str(obj)  # Convert Decimal to string
-        elif isinstance(obj, date):
-            return obj.isoformat()  # Convert date to ISO string format
-        return json.JSONEncoder.default(self, obj)
+import json
+from src.sdg_common.sdg_core import fake_row, row_to_json
 
 
 def change_file_extension(file_name, file_format):
@@ -55,20 +43,6 @@ def respond_with_file(file_name, local_file_path):
     return response
 
 
-def invoke_method(obj, method_name):
-    # Check if the method exists in the object
-    if hasattr(obj, method_name):
-        method = getattr(obj, method_name)
-        if callable(method):
-            return method()  # Call the method and return its result
-    else:
-        return None  # or raise an error if the method does not exist
-
-
-def fake_row(faker_methods):
-    fake = Faker()
-    return [invoke_method(fake, method_name) for method_name in faker_methods]
-
 
 def create_file(file_name):
     # Define the full path for the new file
@@ -100,10 +74,6 @@ def create_data_csv(field_definitions, field_data, faker_methods, rows):
     return temp_file_path
 
 
-def row_to_json(faker_methods, headers):
-    row_data = fake_row(faker_methods)
-    row_dict = dict(zip(headers, row_data))
-    return json.dumps(row_dict, ensure_ascii=False, cls=CustomJSONEncoder)
 
 
 def create_data_json(field_definitions, field_data, faker_methods, rows):

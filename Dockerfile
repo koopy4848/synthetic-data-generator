@@ -1,11 +1,10 @@
 # Use an official Python runtime as a parent image
-FROM python:3.8
+FROM python:3.11-slim
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy the current directory contents into the container at /usr/src/app
-COPY . .
+COPY . /app/
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
@@ -17,4 +16,4 @@ EXPOSE 5000
 ENV NAME World
 
 # Run app.py when the container launches
-CMD ["python", "./run.py"]
+CMD ["python", "./src/webapp/run.py"]

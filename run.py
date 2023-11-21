@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from webapp.app import create_app
+from src.webapp.app import create_app
 
 # Assume a default environment
 env = os.environ.get('ENVIRONMENT', 'development')

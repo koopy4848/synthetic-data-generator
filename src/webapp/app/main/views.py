@@ -1,11 +1,10 @@
 import json
-
 from flask import render_template, request
 from . import main
-from webapp.app.models.fields_definitions import field_definitions
-from webapp.app.models.PostData import PostData
-from webapp.app.utils import fake_row, create_data_file, start_sdg_in_gcs, start_sdg_in_bq, create_schema_file,\
+from src.webapp.app.models.PostData import PostData
+from src.webapp.app.utils import create_data_file, start_sdg_in_gcs, start_sdg_in_bq, create_schema_file, \
     respond_with_file
+from src.sdg_common import *
 
 
 @main.route('/')
