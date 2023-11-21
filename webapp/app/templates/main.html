@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Synthetic Data Generator</h1>
+    <div id="message" {% if message %}class="alert alert-danger" {%endif%}>
+        {{ message }}
+    </div>
+    <form action="{{ url_for('main.preview_data') }}" method="post" id="data-form">
+        <div class="card">
+            <div class="card-header" id="headingDefineSchema">
+                <h2 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse"
+                            data-target="#collapseDefineSchema" aria-expanded="true"
+                            aria-controls="collapseOne">
+                        Define Schema
+                    </button>
+                </h2>
+            </div>
+
+            <div id="collapseDefineSchema" class="collapse show" aria-labelledby="headingDefineSchema"
+                 data-parent="#data-form">
+                <div class="card-body">
+                    <button form="data-form" type="submit" class="btn btn-success" id="previewData-btn">䷀🔍
+                        Preview
+                    </button>
+                    <button form="data-form" type="submit" class="btn btn-secondary" id="downloadData-btn">䷀↓
+                        Generate & Download Data
+                    </button>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-2">
+                            <label for="rows">No of rows:</label>
+                            <input type="number" id="rows" name="rows" class="form-control"
+                                   placeholder="Enter no of rows"
+                                   value="{{ post_data.rows if post_data.rows else 10 }}">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="file-name">File name:</label>
+                            <input type="text" id="file-name" name="file_name" class="form-control"
+                                   placeholder="Enter file name"
+                                   value="{{ post_data.file_name if post_data.file_name else 'synthetic_generated_data.csv' }}">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="file_format">Format:</label>
+                            <select name="file_format" id="file_format" class="form-control">
+                                <option value="csv" {% if post_data.file_format=='csv' %}selected{% endif %}>csv</option>
+                                <option value="json" {% if post_data.file_format=='json' %}selected{% endif %}>json</option>
+                                <option value="ndjson" {% if post_data.file_format=='ndjson' %}selected{% endif %}>ndjson</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="field-type">Field type:</label>
+                            <select name="field_type" id="field-type" class="form-control">
+                                {% set selected_first_field = post_data.field_data[0][0] if post_data.field_data and
+                                post_data.field_data|length > 0 else None
+                                %}
+                                {% for field in field_definitions.values() %}
+                                <option value="{{ field.field_id }}"
+                                        {% if field.field_id== selected_first_field %}selected{%
+                                        endif %}>{{ field.display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="custom-name">Field custom name:</label>
+                            <input type="text" id="custom-name" name="custom_name"
+                                   placeholder="Enter field custom name"
+                                   class="form-control" {% if post_data.field_data and post_data.field_data|length> 0 %}value="{{
+                            post_data.field_data[0][1]
+                            }}" {% endif %}>
+                        </div>
+                    </div>
+                    <div id="fields">
+                        {% for field in post_data.field_data[1:] %}
+                        <div class="form-row">
+                            <div class="form-group col-md-2">
+                                <select name="field_type_{{ loop.index0 }}" id="field-type-{{ loop.index0 }}"
+                                        class="form-control">
+                                    {% for field_def in field_definitions.values() %}
+                                    <option value="{{ field_def.field_id }}" {% if field[0]== field_def.field_id
+                                            %}selected{%
+                                            endif %}>{{ field_def.display }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <input type="text" id="custom-name-{{ loop.index0 }}"
+                                       name="custom_name_{{ loop.index0 }}"
+                                       value="{{ field[1] }}" class="form-control"
+                                       placeholder="Enter field custom name">
+                            </div>
+                            <div class="form-group col-md-1">
+                                <button type="button" class="btn btn-danger delete-field-button">X</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-row">
+                        <button type="button" class="btn btn-info add-field-button">+</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header" id="headingSchemaFile">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                            data-target="#collapseSchemaFile" aria-expanded="false" aria-controls="collapseSchemaFile">
+                        Schema
+                        File
+                    </button>
+                </h2>
+            </div>
+
+            <div id="collapseSchemaFile" class="collapse" aria-labelledby="headingSchemaFile" data-parent="#data-form">
+                <div class="card-body">
+
+                    <div class="form-row">
+                        <div class="col">
+                            <button form="data-form" type="submit" class="btn btn-primary"
+                                    id="downloadSchema-btn">↓ Download Schema
+                            </button>
+                        </div>
+                        <div class="col">
+                            <button form="data-form" type="submit" class="btn btn-primary"
+                                    id="uploadSchema-btn">↑ Load Schema
+                            </button>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="schema">Schema file:</label>
+                            <input type="file" id="schema" name="schema" placeholder="Enter path to schema"
+                                   class="form-control">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header" id="headingCloud">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed " type="button" data-toggle="collapse"
+                            data-target="#collapseCloud" aria-expanded="false" aria-controls="collapseCloud">
+                        Start Synthetic Data Generator job in Cloud
+                    </button>
+                </h2>
+            </div>
+            <div id="collapseCloud" class="collapse" aria-labelledby="headingCloud" data-parent="#data-form">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="col-md-6"><h4>Save data to BigQuery</h4></div>
+                        <div class="col-md-6"><h4>Save data to Cloud Storage</h4></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-2">
+                            <label for="rows_per_worker">Rows per worker:</label>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control" name="rows_per_worker" id="rows_per_worker" placeholder="Rows per Worker" value="{{post_data.rows_per_worker if post_data.rows_per_worker else post_data.rows if post_data.rows else null}}"/>
+                        </div>
+                        <div class="col-md-2"></div>
+                        <div class="col-md-2">
+                            <label for="rows_per_part">Rows in each file:</label>
+                        </div>
+                        <div class="col-md-2">
+                           <input type="text" class="form-control" id="rows_per_part" name="rows_per_part" placeholder="Rows per Part" value="{{post_data.rows_per_part if post_data.rows_per_part else post_data.rows if post_data.rows else null}}" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-2">
+                            <label for="workers">Number of workers:</label>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control" id="workers" name="workers" placeholder="Workers" value="{{post_data.workers if post_data.workers else 10}}"/>
+                        </div>
+                        <div class="col-md-2"></div>
+                        <div class="col-md-2">
+                            <label for="parts">Number of files:</label>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control" id="parts" name="parts" placeholder="parts" value="{{post_data.parts if post_data.parts else 10}}"/>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-2">
+                            <label for="bq_table">BQ table:</label>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" class="form-control" id="bq_table" name="bq_table" placeholder="BQ Table" value="{{post_data.bq_table if post_data.bq_table else post_data.file_name if post_data.file_name else null}}"/>
+                        </div>
+                        <div class="col-md-2"></div>
+                        <div class="col-md-2">
+                            <label for="gcs_file_prefix">File prefix:</label>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" class="form-control" id="gcs_file_prefix" name="gcs_file_prefix" placeholder="File Prefix" value="{{post_data.gcs_file_prefix if post_data.gcs_file_prefix else post_data.file_name if post_data.file_name else null}}" />
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-control" name="gcs_file_format" id="gcs_file_format" class="form-control">
+                                {% if post_data.gcs_file_format %}
+                                    <option value="csv" {% if post_data.gcs_file_format=='csv' %}selected{% endif %}>csv</option>
+                                    <option value="json" {% if post_data.gcs_file_format=='json' %}selected{% endif %}>json</option>
+                                    <option value="ndjson" {% if post_data.gcs_file_format=='ndjson' %}selected{% endif %}>ndjson</option>
+                                {% else %}
+                                    <option value="csv" {% if post_data.file_format=='csv' %}selected{% endif %}>csv</option>
+                                    <option value="json" {% if post_data.file_format=='json' %}selected{% endif %}>json</option>
+                                    <option value="ndjson" {% if post_data.file_format=='ndjson' %}selected{% endif %}>ndjson</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-4">
+                            <p class="explanation">Data will be saved in table [BQ table]. [Number of workers] message will be posted to pub/sub, each starting a generator that will create [Rows per worker]</p>
+                        </div>
+                        <div class="col-md-2"></div>
+                        <div class="col-md-4">
+                            <p class="explanation">Data will be saved in table files called "[File prefix]_[part_number].[format]". [Number of files] message will be posted to pub/sub, each starting a generator that will create one file with [Rows per file] rows</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-6">
+                            <button form="data-form" type="submit" class="btn btn-warning" id="startBqSdg-btn">Start
+                               <svg fill="none" fill-rule="evenodd" height="5%" viewBox="0 0 32 32" width="5%" fit="" preserveAspectRatio="xMidYMid meet" focusable="false"><path d="M8.627 14.358v3.69c.58.998 1.4 1.834 2.382 2.435v-6.125H8.62z" fill="#424242"></path><path d="M13.044 10.972v10.54c.493.073.998.12 1.516.12.473 0 .934-.042 1.386-.104V10.972h-2.902z" fill="#616161"></path><path d="M18.294 15.81v4.604a6.954 6.954 0 0 0 2.384-2.556v-2.05h-2.384zm5.74 6.233l-1.99 1.992a.592.592 0 0 0 0 .836L27 29.83c.23.23.606.23.836 0l1.992-1.99a.594.594 0 0 0 0-.837l-4.957-4.956a.593.593 0 0 0-.83 0" fill="#424242"></path><path d="M14.615 2C7.648 2 2 7.648 2 14.615 2 21.582 7.648 27.23 14.615 27.23c6.966 0 12.614-5.648 12.614-12.615C27.23 7.648 21.58 2 14.61 2m0 21.96a9.346 9.346 0 0 1-9.346-9.345 9.347 9.347 0 1 1 9.346 9.346" fill="#757575"></path></svg>
+                                BigQuery SDG Job in ☁Cloud based on schema
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button form="data-form" type="submit" class="btn btn-warning" id="startGcsSdg-btn">Start
+                                <svg fill="none" fill-rule="evenodd" height="5%" viewBox="0 0 32 32" width="5%" fit="" preserveAspectRatio="xMidYMid meet" focusable="false"><path d="M0 4h3v11H0zm29 0h3v11h-3z" fill="#616161"></path><path d="M29 15V4h1.815z" fill="#424242"></path><path d="M3 4v11h26V4H3zm12 7H6V8h9v3zm9 .5a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="#757575"></path><path d="M0 17h3v11H0zm29 0h3v11h-3z" fill="#616161"></path><path d="M29 28V17h1.815z" fill="#424242"></path><path d="M3 17v11h26V17H3zm12 7H6v-3h9v3zm9 .5a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="#757575"></path></svg>
+                                Cloud Storage SDG Job in ☁Cloud based on schema
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="container mt-4">
+    {% block preview_content %}
+    {% endblock %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+    const routeToPreviewData = '{{ url_for('main.preview_data') }}';
+    const routeToDownloadData = '{{ url_for('main.download_file') }}';
+    const routeToDownloadSchema = '{{ url_for('main.download_schema') }}';
+    const routeToUploadSchema = '{{ url_for('main.upload_schema') }}';
+    const routeToStartSdgGcsJob = '{{ url_for('main.start_sdg_gcs') }}';
+    const routeToStartSdgBqJob = '{{ url_for('main.start_sdg_bq') }}';
+
+</script>
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+{% endblock %}

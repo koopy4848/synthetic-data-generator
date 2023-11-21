@@ -131,10 +131,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
         form.submit();
     });
 
-    document.getElementById('startSdg-btn').addEventListener('click', function(event) {
-        if (!validateForm("startSdg")){
-            return;
+    document.querySelectorAll('#startBqSdg-btn', '#startGcsSdg-btn').addEventListener('click', function(event) {
+        if (this.id == 'startBqSdg-btn'){
+            if (!validateForm("startBqSdg")){
+                return;
+            }
         }
+
+        if (this.id == 'startGcsSdg-btn'){
+            if (!validateForm("startGcsSdg")){
+                return;
+            }
+        }
+
         const formData = new FormData(form);
         const requestData = {};
 
@@ -142,7 +151,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             requestData[key] = value;
         }
 
-        fetch('/upload-data', {
+        fetch(routeToStartSdgBqJob, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -153,7 +162,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         .then(data => {
             // Update the webpage with the success message
             const uploadStatusDiv = document.getElementById('message');
-            uploadStatusDiv.innerHTML = `Upload to Google Cloud successful under filename "${data.filename}"`;
+            uploadStatusDiv.innerHTML = `Posted to Google Pub Sub messages with ids "${data}"`;
             // On success
             uploadStatusDiv.className = 'success';
             uploadStatusDiv.style.display = 'block';

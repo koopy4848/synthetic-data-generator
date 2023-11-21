@@ -1,1 +1,1 @@
-from . import fields_definitions
+from . import fields_definitions, PostData

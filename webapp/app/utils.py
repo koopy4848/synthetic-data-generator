@@ -1,13 +1,17 @@
 import csv
-import os
+import tempfile
 from faker import Faker
-from flask import current_app, Response
+from flask import current_app
 import json
 from google.cloud import storage
 from ..config import config
 from werkzeug.wsgi import FileWrapper
 from decimal import Decimal
 from datetime import date
+from google.cloud import pubsub_v1
+
+from flask import Response
+import os
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -33,15 +37,15 @@ def cleanup_file(file_handle, local_file_path):
     file_handle.close()  # Close the file
     try:
         os.remove(local_file_path)  # Delete the file
+        print(f'Removed {local_file_path}')
     except Exception as error:
+
         current_app.logger.error(f"Error removing file: {error}")
 
 
 def respond_with_file(file_name, local_file_path):
-
     file_handle = open(local_file_path, 'rb')
-    wrapper = FileWrapper(file_handle)\
-
+    wrapper = FileWrapper(file_handle)
     response = Response(wrapper, mimetype='text/csv', direct_passthrough=True)
     response.headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
 
@@ -77,10 +81,9 @@ def create_file(file_name):
     return full_path
 
 
-def create_data_csv(full_path, field_definitions, field_data, faker_methods, rows):
-    # Open a new CSV file
-    with open(full_path, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
+def create_data_csv(field_definitions, field_data, faker_methods, rows):
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
+        writer = csv.writer(temp_file)
 
         # Write header
         # Custom names as headers
@@ -92,6 +95,10 @@ def create_data_csv(full_path, field_definitions, field_data, faker_methods, row
             row = fake_row(faker_methods)
             writer.writerow(row)
 
+        temp_file_path = temp_file.name
+
+    return temp_file_path
+
 
 def row_to_json(faker_methods, headers):
     row_data = fake_row(faker_methods)
@@ -99,52 +106,57 @@ def row_to_json(faker_methods, headers):
     return json.dumps(row_dict, ensure_ascii=False, cls=CustomJSONEncoder)
 
 
-def create_data_json(full_path, field_definitions, field_data, faker_methods, rows):
+def create_data_json(field_definitions, field_data, faker_methods, rows):
     # Create the headers
     headers = [field[1] if field[1] else field_definitions[field[0]].display for field in field_data]
 
-    with open(full_path, mode='w', encoding='utf-8') as file:
-        file.write('[')  # Start of JSON array
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, encoding='utf-8') as temp_file:
+        temp_file.write('[')  # Start of JSON array
 
         for i in range(rows):
             json_string = row_to_json(faker_methods, headers)
 
             if i > 0:
-                file.write(',\n')  # Add a comma before the next item, except for the first item
+                temp_file.write(',\n')  # Add a comma before the next item, except for the first item
 
-            file.write(json_string)  # Write the JSON string
+            temp_file.write(json_string)  # Write the JSON string
 
-        file.write(']')  # End of JSON array
+        temp_file.write(']')  # End of JSON array
+        temp_file_path = temp_file.name
+
+    return temp_file_path
 
 
-def create_data_ndjson(full_path, field_definitions, field_data, faker_methods, rows):
+def create_data_ndjson(field_definitions, field_data, faker_methods, rows):
     # Create the headers
     headers = [field[1] if field[1] else field_definitions[field[0]].display for field in field_data]
 
     # Write to an NDJSON file
-    with open(full_path, mode='w', encoding='utf-8') as file:
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, encoding='utf-8') as temp_file:
+        temp_file.write('[')  # Start of JSON array
         for i in range(rows):
             json_string = row_to_json(faker_methods, headers)
 
-            file.write(json_string + '\n')
+            temp_file.write(json_string + '\n')
+        temp_file_path = temp_file.name
+
+    return temp_file_path
 
 
 def create_data_file(file_name, file_format, rows, field_data, field_definitions):
     faker_methods = [field_definitions[field[0]].faker_method for field in field_data]
 
     new_file_name = change_file_extension(file_name, file_format)
-    print(new_file_name)
-    print(file_format)
-    full_path = create_file(new_file_name)
 
+    outfile = ""
     if file_format == 'csv':
-        create_data_csv(full_path, field_definitions, field_data, faker_methods, rows)
+        outfile = create_data_csv(field_definitions, field_data, faker_methods, rows)
     elif file_format == 'json':
-        create_data_json(full_path, field_definitions, field_data, faker_methods, rows)
+        outfile = create_data_json(field_definitions, field_data, faker_methods, rows)
     elif file_format == 'ndjson':
-        create_data_ndjson(full_path, field_definitions, field_data, faker_methods, rows)
+        outfile = create_data_ndjson(field_definitions, field_data, faker_methods, rows)
 
-    return full_path, new_file_name
+    return outfile, new_file_name
 
 
 def create_schema_file(file_name, file_format, rows, field_data):
@@ -156,21 +168,59 @@ def create_schema_file(file_name, file_format, rows, field_data):
     json_data = json.dumps({"file_name": file_name, "file_format": file_format, "rows": rows, "field_data": field_data},
                            indent=4)
 
-    local_file_path = create_file(schema_file_name)
-
-    # Write json data to schema file
-    with open(local_file_path, 'w') as schema_file:
-        schema_file.write(json_data)
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
+        temp_file.write(json_data)
+        temp_file_path = temp_file.name
 
     # Return the schema file name for reference if needed
-    return {"filename": schema_file_name, "local_file_path": local_file_path}
+    return schema_file_name, temp_file_path
 
 
-def upload_schema_file_to_gcs(file_name, file_format, rows, field_data):
+def start_sdg_in_gcs(field_data, rows_per_part, parts, gcs_file_suffix, gcs_file_format):
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, config.GCS_TOPIC_ID)
+
+    # if file_name has extension in it
+    # ignore it
+
+    for i in range(0, parts):
+        file_name = f"{gcs_file_suffix}_{i:000}.{gcs_file_format}"
+
+        data = json.dumps({"file_name": file_name, "file_format": gcs_file_format, "rows": rows_per_part, "field_data": field_data},
+                          indent=4)
+
+        try:
+            # Data must be a bytestring
+            data = data.encode("utf-8")
+
+            # Publishes a message
+            future = publisher.publish(topic_path, data)
+            return f'Message published. Message ID: {future.result()}'
+        except Exception as e:
+            return f'An error occurred: {e}'
+
+
+def start_sdg_in_bq(field_data, rows_per_worker, workers, bq_table):
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(config.PROJECT_ID, config.BQ_TOPIC_ID)
+
+    for i in range(0, workers):
+        data = json.dumps({"bq_table": bq_table, "rows": rows_per_worker, "field_data": field_data},
+                          indent=4)
+
+        try:
+            # Data must be a bytestring
+            data = data.encode("utf-8")
+
+            # Publishes a message
+            future = publisher.publish(topic_path, data)
+            return f'Message published. Message ID: {future.result()}'
+        except Exception as e:
+            return f'An error occurred: {e}'
+
+
+def save_schema_to_gcs(schema_file_name, schema_data):
     bucket_name = config.BUCKET_NAME
-
-    # Create the schema file
-    schema_file_name, _ = create_schema_file(file_name, file_format, rows, field_data)
 
     # Initialize Google Cloud Storage client
     storage_client = storage.Client()
@@ -181,13 +231,6 @@ def upload_schema_file_to_gcs(file_name, file_format, rows, field_data):
     if blob.exists():
         return {"status": "error", "message": "File already exists in the bucket"}
 
-    # Read the schema file data
-    with open(schema_file_name, 'r') as file:
-        schema_data = file.read()
-
     # Upload the schema file
     blob.upload_from_string(schema_data, content_type='application/json')
 
-    os.remove(schema_file_name)
-
-    return {"status": "success", "message": "File uploaded successfully", "filename": schema_file_name}

@@ -23,3 +23,8 @@
     font-size: 1.5em; /* Larger title font */
     padding: 0px;
 }
+
+.explanation {
+    padding: 10px;
+    font-size: 10pt;
+}
