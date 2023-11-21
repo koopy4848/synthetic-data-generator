@@ -52,11 +52,7 @@ jobs:
           --platform managed \
           --allow-unauthenticated \
           --project ${{ secrets.GCP_PROJECT_ID }} \
-          --set-env-vars \
-              BUCKET_NAME=${{ secrets.BUCKET_NAME }},\
-              GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},\
-              GCS_CLOUD_TOPIC_ID=${{ secrets.GCS_CLOUD_TOPIC_ID }},\
-              BQ_CLOUD_TOPIC_ID=${{ secrets.BQ_CLOUD_TOPIC_ID }} \
+          --set-env-vars BUCKET_NAME=${{ secrets.BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},GCS_CLOUD_TOPIC_ID=${{ secrets.GCS_CLOUD_TOPIC_ID }},BQ_CLOUD_TOPIC_ID=${{ secrets.BQ_CLOUD_TOPIC_ID }} \
           --service-account ${{ secrets.SERVICE_ACCOUNT }}
 
   deploy-dataflow:
