@@ -20,33 +20,6 @@ class CustomJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def invoke_method(obj, method_name):
-    # Check if the method exists in the object
-    if hasattr(obj, method_name):
-        method = getattr(obj, method_name)
-        if callable(method):
-            return method()  # Call the method and return its result
-    else:
-        return None  # or raise an error if the method does not exist
-
-
-def fake_row(faker_methods):
-    fake = Faker()
-    return [invoke_method(fake, method_name) for method_name in faker_methods]
-
-
-def row_to_dict(faker_methods, headers):
-    row_data = fake_row(faker_methods)
-    row_dict = dict(zip(headers, row_data))
-
-    # Convert any non-serializable types
-    for key, value in row_dict.items():
-        if isinstance(value, Decimal):
-            row_dict[key] = str(value)  # Convert Decimal to string
-        elif isinstance(value, date):
-            row_dict[key] = value.isoformat()  # Convert date to ISO string format
-
-    return row_dict
 
 
 class Field:
@@ -62,6 +35,32 @@ class ProcessMessage(beam.DoFn):
     def __init__(self, field_defs):
         self.field_definitions = field_defs
 
+    def invoke_method(self, obj, method_name):
+        # Check if the method exists in the object
+        if hasattr(obj, method_name):
+            method = getattr(obj, method_name)
+            if callable(method):
+                return method()  # Call the method and return its result
+        else:
+            return None  # or raise an error if the method does not exist
+
+    def fake_row(self, faker_methods):
+        fake = Faker()
+        return [self.invoke_method(fake, method_name) for method_name in faker_methods]
+
+    def row_to_dict(self, faker_methods, headers):
+        row_data = self.fake_row(faker_methods)
+        row_dict = dict(zip(headers, row_data))
+
+        # Convert any non-serializable types
+        for key, value in row_dict.items():
+            if isinstance(value, Decimal):
+                row_dict[key] = str(value)  # Convert Decimal to string
+            elif isinstance(value, date):
+                row_dict[key] = value.isoformat()  # Convert date to ISO string format
+
+        return row_dict
+
     def process(self, element):
         message = json.loads(element)
         bq_table = message['bq_table']
@@ -70,36 +69,11 @@ class ProcessMessage(beam.DoFn):
 
         faker_methods = [self.field_definitions[field[0]].faker_method for field in field_data]
         headers = [field[1] if field[1] else self.field_definitions[field[0]].display for field in field_data]
-        schema = generate_bigquery_schema_from_message(field_data, self.field_definitions)
+        schema = self.generate_bigquery_schema_from_message(field_data, self.field_definitions)
         for _ in range(rows):
-            row_data = row_to_dict(faker_methods, headers)
+            row_data = self.row_to_dict(faker_methods, headers)
             key = (bq_table, json.dumps(schema))  # Use JSON string as the schema can be a complex object
             yield key, row_data
-
-
-def generate_bigquery_schema_from_message(field_data, field_definitions):
-    """
-    Generates a BigQuery schema from field data contained in a Pub/Sub message.
-
-    :param field_data: A list of tuples representing field data.
-    :param field_definitions: A dictionary of Field objects.
-    :return: A list of dictionaries representing the BigQuery schema.
-    """
-    schema = []
-    for field in field_data:
-        field_id = field[0]
-        field_info = field_definitions[field_id]
-        field_schema = {
-            'name': field[1] if field[1] else field_info.display,
-            'type': 'STRING' if field_info.data_type in [str, 'str'] else
-            'INTEGER' if field_info.data_type in [int, 'int'] else
-            'FLOAT' if field_info.data_type in [float, 'float'] else
-            'DATE' if field_info.data_type in ['date'] else
-            'STRING',  # Default type
-            'mode': 'NULLABLE'  # Assuming all fields are nullable
-        }
-        schema.append(field_schema)
-    return schema
 
 
 class WriteGroupedDataToBigQueryFn(beam.DoFn):
@@ -107,6 +81,30 @@ class WriteGroupedDataToBigQueryFn(beam.DoFn):
         self.bq_dataset = os.getenv('BQ_DATASET', 'default_dataset')  # Fallback to 'default_dataset' if not set
         self.gcp_project_id = os.getenv('GCP_PROJECT_ID', 'default_dataset')  # Fallback to 'default_dataset' if not set
         self.client = bigquery.Client()
+
+    def generate_bigquery_schema_from_message(self, field_data):
+        """
+        Generates a BigQuery schema from field data contained in a Pub/Sub message.
+
+        :param field_data: A list of tuples representing field data.
+        :param field_definitions: A dictionary of Field objects.
+        :return: A list of dictionaries representing the BigQuery schema.
+        """
+        schema = []
+        for field in field_data:
+            field_id = field[0]
+            field_info = self.field_definitions[field_id]
+            field_schema = {
+                'name': field[1] if field[1] else field_info.display,
+                'type': 'STRING' if field_info.data_type in [str, 'str'] else
+                'INTEGER' if field_info.data_type in [int, 'int'] else
+                'FLOAT' if field_info.data_type in [float, 'float'] else
+                'DATE' if field_info.data_type in ['date'] else
+                'STRING',  # Default type
+                'mode': 'NULLABLE'  # Assuming all fields are nullable
+            }
+            schema.append(field_schema)
+        return schema
 
     def process(self, element, *args, **kwargs):
         table, schema_json = element[0]
