@@ -74,8 +74,6 @@ def create_data_csv(field_definitions, field_data, faker_methods, rows):
     return temp_file_path
 
 
-
-
 def create_data_json(field_definitions, field_data, faker_methods, rows):
     # Create the headers
     headers = [field[1] if field[1] else field_definitions[field[0]].display for field in field_data]

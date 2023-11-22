@@ -55,7 +55,7 @@ jobs:
           --set-env-vars BUCKET_NAME=${{ secrets.BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},GCS_CLOUD_TOPIC_ID=${{ secrets.GCS_CLOUD_TOPIC_ID }},BQ_CLOUD_TOPIC_ID=${{ secrets.BQ_CLOUD_TOPIC_ID }} \
           --service-account ${{ secrets.SERVICE_ACCOUNT }}
 
-  deploy-dataflow:
+  deploy-dataflow-bq:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
@@ -68,18 +68,55 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-    - name: Install Dataflow dependencies
-      run: pip install -r src/dataflow_sdg/requirements.txt
-    - name: Prepare the dataflow_sdg directory
-      run: |
-        cp -R ../common ./dataflow_sdg/common
-        pip install -e ./dataflow_sdg/common
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: pip install -r src/dataflow_sdg_bq/requirements.txt
     - name: Deploy to Dataflow
       run: |
-        python dataflow_sdg/main.py \
-          --setup_file ./dataflow_sdg/setup.py \
-          --project ${{ secrets.GCP_PROJECT_ID }} \
-          --region europe-central2 \
-          --runner DataflowRunner \
-          --temp_location gs://{{ secrets.BUCKET_NAME }}/temp \
-          --staging_location gs://{{ secrets.BUCKET_NAME }}/staging
+          cd src/dataflow_sdg_bq
+          python main.py \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region europe-central2 \
+            --runner DataflowRunner \
+            --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
+            --staging_location gs://${{ secrets.BUCKET_NAME }}/staging
+      env:
+          BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          BQ_SUB: ${{ secrets.BQ_SUB }}
+
+  deploy-dataflow-gcs:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+    - uses: actions/checkout@v2
+    - name: Authenticate to Google Cloud (Again if needed)
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: pip install -r src/dataflow_sdg_gcs/requirements.txt
+    - name: Deploy to Dataflow
+      run: |
+          cd src/dataflow_sdg_gcs
+          python main.py \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region europe-central2 \
+            --runner DataflowRunner \
+            --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
+            --staging_location gs://${{ secrets.BUCKET_NAME }}/staging
+      env:
+          BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCS_SUB: ${{ secrets.GCS_SUB }}

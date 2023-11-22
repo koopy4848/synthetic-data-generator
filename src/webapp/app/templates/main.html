@@ -202,7 +202,7 @@
                             <input type="text" class="form-control" id="gcs_file_prefix" name="gcs_file_prefix" placeholder="File Prefix" value="{{post_data.gcs_file_prefix if post_data.gcs_file_prefix else post_data.file_name if post_data.file_name else null}}" />
                         </div>
                         <div class="col-md-2">
-                            <select class="form-control" name="gcs_file_format" id="gcs_file_format" class="form-control">
+                            <select class="form-control" name="gcs_file_format" id="gcs_file_format">
                                 {% if post_data.gcs_file_format %}
                                     <option value="csv" {% if post_data.gcs_file_format=='csv' %}selected{% endif %}>csv</option>
                                     <option value="json" {% if post_data.gcs_file_format=='json' %}selected{% endif %}>json</option>
