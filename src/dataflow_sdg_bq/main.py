@@ -77,27 +77,6 @@ class ProcessMessage(beam.DoFn):
 
         return row_dict
 
-    def process(self, element):
-        message = json.loads(element)
-        bq_table = message['bq_table']
-        field_data = message['field_data']
-        rows = message['rows']
-
-        faker_methods = [self.field_definitions[field[0]].faker_method for field in field_data]
-        headers = [field[1] if field[1] else self.field_definitions[field[0]].display for field in field_data]
-        schema = self.generate_bigquery_schema_from_message(field_data, self.field_definitions)
-        for _ in range(rows):
-            row_data = self.row_to_dict(faker_methods, headers)
-            key = (bq_table, json.dumps(schema))  # Use JSON string as the schema can be a complex object
-            yield key, row_data
-
-
-class WriteGroupedDataToBigQueryFn(beam.DoFn):
-    def start_bundle(self):
-        self.bq_dataset = os.getenv('BQ_DATASET', 'default_dataset')  # Fallback to 'default_dataset' if not set
-        self.gcp_project_id = os.getenv('GCP_PROJECT_ID', 'default_dataset')  # Fallback to 'default_dataset' if not set
-        self.client = bigquery.Client()
-
     def generate_bigquery_schema_from_message(self, field_data):
         """
         Generates a BigQuery schema from field data contained in a Pub/Sub message.
@@ -121,6 +100,27 @@ class WriteGroupedDataToBigQueryFn(beam.DoFn):
             }
             schema.append(field_schema)
         return schema
+
+    def process(self, element):
+        message = json.loads(element)
+        bq_table = message['bq_table']
+        field_data = message['field_data']
+        rows = message['rows']
+
+        faker_methods = [self.field_definitions[field[0]].faker_method for field in field_data]
+        headers = [field[1] if field[1] else self.field_definitions[field[0]].display for field in field_data]
+        schema = self.generate_bigquery_schema_from_message(field_data, self.field_definitions)
+        for _ in range(rows):
+            row_data = self.row_to_dict(faker_methods, headers)
+            key = (bq_table, json.dumps(schema))  # Use JSON string as the schema can be a complex object
+            yield key, row_data
+
+
+class WriteGroupedDataToBigQueryFn(beam.DoFn):
+    def start_bundle(self):
+        self.bq_dataset = os.getenv('BQ_DATASET', 'default_dataset')  # Fallback to 'default_dataset' if not set
+        self.gcp_project_id = os.getenv('GCP_PROJECT_ID', 'default_dataset')  # Fallback to 'default_dataset' if not set
+        self.client = bigquery.Client()
 
     def process(self, element, *args, **kwargs):
         table, schema_json = element[0]

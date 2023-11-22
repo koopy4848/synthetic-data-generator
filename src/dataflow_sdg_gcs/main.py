@@ -5,7 +5,6 @@ from datetime import date
 from decimal import Decimal
 from faker import Faker
 import os
-from google.cloud import storage
 import csv
 import io
 
@@ -17,8 +16,6 @@ class CustomJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, date):
             return obj.isoformat()  # Convert date to ISO string format
         return json.JSONEncoder.default(self, obj)
-
-
 
 
 class Field:
@@ -63,6 +60,7 @@ class WriteDataToCloudStorageFn(beam.DoFn):
         return row_dict
 
     def start_bundle(self):
+        from google.cloud import storage
         self.gcs_bucket = os.getenv('BUCKET_NAME', 'default_bucket')
         self.client = storage.Client()
         self.field_definitions = {
