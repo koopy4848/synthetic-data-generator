@@ -125,8 +125,6 @@ class WriteDataToCloudStorageFn(beam.DoFn):
 
 def run(argv=None):
     pipeline_options = PipelineOptions(argv)
-    setup_options = pipeline_options.view_as(SetupOptions)
-    setup_options.setup_file = './setup.py'
     subscription = os.getenv("GCS_SUB")
 
     with beam.Pipeline(options=pipeline_options) as p:

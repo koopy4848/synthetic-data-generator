@@ -148,11 +148,6 @@ class WriteGroupedDataToBigQueryFn(beam.DoFn):
 
 def run(argv=None):
     pipeline_options = PipelineOptions(argv)
-
-    # Use setup.py to install additional dependencies in the workers.
-    setup_options = pipeline_options.view_as(SetupOptions)
-    setup_options.setup_file = './setup.py'
-
     subscription = os.getenv("BQ_SUB")
 
     with beam.Pipeline(options=pipeline_options) as p:
