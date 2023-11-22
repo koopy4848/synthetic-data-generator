@@ -155,7 +155,7 @@ def run(argv=None):
     with beam.Pipeline(options=pipeline_options) as p:
         (p
          | "Read from Pub/Sub" >> beam.io.ReadFromPubSub(subscription=subscription)
-         | "Process Messages" >> beam.ParDo(ProcessMessage())
+         | "Process Messages" >> beam.ParDo(ProcessMessage(field_defs=field_definitions))
          | "Apply Windowing" >> beam.WindowInto(window.FixedWindows(10))  # 10 seconds windows
          | "Group by Table and Schema" >> beam.GroupByKey()
          | "Write Grouped Data to BigQuery" >> beam.ParDo(WriteGroupedDataToBigQueryFn())
