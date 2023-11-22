@@ -8,7 +8,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Authenticate to Google Cloud (Again if needed)
       uses: google-github-actions/auth@v1
       with:
@@ -69,7 +69,7 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     - name: Install dependencies
@@ -81,6 +81,7 @@ jobs:
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --region europe-central2 \
             --runner DataflowRunner \
+            --streaming \
             --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
             --staging_location gs://${{ secrets.BUCKET_NAME }}/staging
       env:
@@ -92,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Authenticate to Google Cloud (Again if needed)
       uses: google-github-actions/auth@v1
       with:
@@ -102,7 +103,7 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     - name: Install dependencies
@@ -114,6 +115,7 @@ jobs:
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --region europe-central2 \
             --runner DataflowRunner \
+            --streaming \
             --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
             --staging_location gs://${{ secrets.BUCKET_NAME }}/staging
       env:
