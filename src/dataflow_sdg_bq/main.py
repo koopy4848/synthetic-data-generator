@@ -21,7 +21,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 
 class ProcessMessage(beam.DoFn):
-    def __init__(self):
+    def start_bundle(self):
         self.field_definitions = {
             "first_name": ('first_name', 'first_name', 'First Name', str, 'Vasile'),
             "last_name": ('last_name', 'last_name', 'Last Name', str, 'Popescu'),

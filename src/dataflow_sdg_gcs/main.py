@@ -3,10 +3,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 import json
 from datetime import date
 from decimal import Decimal
-from faker import Faker
 import os
-import csv
-import io
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -27,38 +24,17 @@ class CustomJSONEncoder(json.JSONEncoder):
  #       self.example = example
 
 
+def invoke_method(obj, method_name):
+    # Check if the method exists in the object
+    if hasattr(obj, method_name):
+        method = getattr(obj, method_name)
+        if callable(method):
+            return method()  # Call the method and return its result
+    else:
+        return None  # or raise an error if the method does not exist
+
+
 class WriteDataToCloudStorageFn(beam.DoFn):
-    def __init__(self):
-        self.client = None
-        self.gcs_bucket = None
-        self.field_definitions = None
-
-    def invoke_method(self, obj, method_name):
-        # Check if the method exists in the object
-        if hasattr(obj, method_name):
-            method = getattr(obj, method_name)
-            if callable(method):
-                return method()  # Call the method and return its result
-        else:
-            return None  # or raise an error if the method does not exist
-
-    def fake_row(self, faker_methods):
-        fake = Faker()
-        return [self.invoke_method(fake, method_name) for method_name in faker_methods]
-
-    def row_to_dict(self, faker_methods, headers):
-        row_data = self.fake_row(faker_methods)
-        row_dict = dict(zip(headers, row_data))
-
-        # Convert any non-serializable types
-        for key, value in row_dict.items():
-            if isinstance(value, Decimal):
-                row_dict[key] = str(value)  # Convert Decimal to string
-            elif isinstance(value, date):
-                row_dict[key] = value.isoformat()  # Convert date to ISO string format
-
-        return row_dict
-
     def start_bundle(self):
         from google.cloud import storage
         self.gcs_bucket = os.getenv('BUCKET_NAME', 'default_bucket')
@@ -94,15 +70,19 @@ class WriteDataToCloudStorageFn(beam.DoFn):
         bucket = self.client.bucket(self.gcs_bucket)
         blob = bucket.blob(file_name)
 
+        import io
         output = io.StringIO()
+
+        from faker import Faker
         faker = Faker()
 
+        import csv
         if file_format == 'csv':
             content_type = 'text/csv'
             writer = csv.DictWriter(output, fieldnames=headers)
             writer.writeheader()
             for _ in range(rows):
-                row_data = [self.invoke_method(faker, method_name) for method_name in faker_methods]
+                row_data = [invoke_method(faker, method_name) for method_name in faker_methods]
                 row_dict = dict(zip(headers, row_data))
                 writer.writerow(row_dict)
 
@@ -110,7 +90,7 @@ class WriteDataToCloudStorageFn(beam.DoFn):
             content_type = 'application/json'
             json_rows = []
             for _ in range(rows):
-                row_data = [self.invoke_method(faker, method_name) for method_name in faker_methods]
+                row_data = [invoke_method(faker, method_name) for method_name in faker_methods]
                 row_dict = dict(zip(headers, row_data))
                 json_row = json.dumps(row_dict, ensure_ascii=False, cls=CustomJSONEncoder)
                 if file_format == "ndjson":
