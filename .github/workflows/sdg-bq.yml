@@ -42,10 +42,16 @@ jobs:
 
     - name: Deploy to Dataflow
       run: |
-        gcloud dataflow flex-template run "sdg-bq-${{ github.run_id }}" \
-          --template-file-gcs-location "gs://${{ secrets.BUCKET_NAME }}/templates/sdg_bq.json" \
+        python -m dataflow_sdg_bq.main \
+          --project ${{ secrets.GCP_PROJECT_ID }} \
           --region europe-central2 \
-          --project ${{ secrets.GCP_PROJECT_ID }}
+          --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
+          --staging_location gs://${{ secrets.BUCKET_NAME }}/staging \
+          --runner DataflowRunner \
+          --sdk_container_image europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dataflow-sdg-bq/sdg-bq:latest \
+          --disk_size_gb 30 \
+          --experiments use_runner_v2 \
+          --sdk_location container
       env:
           BQ_DATASET: ${{ secrets.BQ_DATASET }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
