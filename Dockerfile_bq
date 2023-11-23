@@ -4,11 +4,10 @@ FROM apache/beam_python3.10_sdk:2.52.0
 # COPY common_shared_library /dataflow/common_shared_library
 
 # Copy specific application
-COPY src/dataflow_sdg_bq /dataflow/dataflow_sdg_bq
+COPY src/dataflow_sdg_bq /src/dataflow_sdg_bq
 
 # Install Python dependencies
-COPY src/dataflow_sdg_bq/requirements.txt /dataflow/requirements.txt
-RUN pip install --no-cache-dir -r /dataflow/requirements.txt
+RUN pip install --no-cache-dir -r /src/dataflow_sdg_bq/requirements.txt
 
 # Set the entrypoint to the Apache Beam SDK launcher.
 ENTRYPOINT ["/opt/apache/beam/boot"]
