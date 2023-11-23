@@ -1,7 +1,7 @@
 FROM apache/beam_python3.10_sdk:2.52.0
 
 # Copy shared library
-COPY common_shared_library /dataflow/common_shared_library
+# COPY common_shared_library /dataflow/common_shared_library
 
 # Copy specific application
 COPY src/dataflow_sdg_bq /dataflow/dataflow_sdg_bq
