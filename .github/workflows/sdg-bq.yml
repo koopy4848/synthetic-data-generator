@@ -39,7 +39,7 @@ jobs:
 
     - name: Deploy to Dataflow
       run: |
-        python -m dataflow_sdg_bq.main \
+        python /dataflow/dataflow_sdg_bq/main.py \
           --project ${{ secrets.GCP_PROJECT_ID }} \
           --region europe-central2 \
           --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
