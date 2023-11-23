@@ -3,9 +3,6 @@ name: Python CI/CD to Google Artifact Registry for Dataflow SDG BQ
 on:
   push:
     branches: [ master ]
-    paths:
-      - 'src/dataflow_sdg_bq/**'
-      - 'Dockerfile_bq'
 
 jobs:
   build-and-push:
