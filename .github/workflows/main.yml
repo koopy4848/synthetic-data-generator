@@ -1,0 +1,58 @@
+name: Python CI/CD to Google Artifact Registry for Dataflow SDG BQ
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'src/dataflow_sdg_bq/**'
+      - 'Dockerfile_bq'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Configure Docker to use the gcloud command-line tool as a credential helper
+      run: gcloud auth configure-docker europe-central2-docker.pkg.dev
+
+    - name: Build and Push Docker image to Artifact Registry
+      run: |
+        docker build -f Dockerfile_bq -t europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dataflow-sdg-bq/sdg-bq:latest .
+        docker push europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dataflow-sdg-bq/sdg-bq:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+    - name: Authenticate to Google Cloud (Again if needed)
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Deploy to Dataflow
+      run: |
+        python -m dataflow_sdg_bq.main \
+          --project ${{ secrets.GCP_PROJECT_ID }} \
+          --region europe-central2 \
+          --temp_location gs://${{ secrets.BUCKET_NAME }}/temp \
+          --staging_location gs://${{ secrets.BUCKET_NAME }}/staging \
+          --runner DataflowRunner \
+          --sdk_container_image europe-central2-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dataflow-sdg-bq/sdg-bq:latest \
+          --disk_size_gb 30 \
+          --experiments use_runner_v2 \
+          --sdk_location container
+      env:
+          BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          BQ_SUB: ${{ secrets.BQ_SUB }}
